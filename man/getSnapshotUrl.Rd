@@ -11,8 +11,7 @@ getSnapshotUrl(snapshotdate, autosnap = c("first", "last", "all"),
 
 \item{returnUrl}{If TRUE, returns URL with snapshotdate appended, otherwise returns snapshotdate as a string}
 
-\item{snapshotdate}{(date) Required. Date of snapshot to use. E.g. "2014-06-20". If left blank, you
-will be supplied with options.}
+\item{snapshotdate}{(date) Required. Date of snapshot to use. E.g. "2014-06-20". If left blank, you will be supplied with options.}
 
 \item{autosnap}{One of first, last or all. Determines how to resolve the snapshot id for a given date, if more than one snapshot exists on MRAN for that date.}
 }

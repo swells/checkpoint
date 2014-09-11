@@ -7,7 +7,7 @@ cleanRRTfolder(repo_root)
 
 
 
-test_that("snapshot functions return correct results", {
+test_that("checkpoint functions return correct results", {
   
   snap_date <- "2014-09-08"
   

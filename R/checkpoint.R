@@ -7,8 +7,7 @@
 #' You can run this function to start a new RRT repo, and to refresh a repo with new work. This function downloads packages and installs them, as needed.
 #'
 #'
-#' @param snapshotdate (date) Required. Date of snapshot to use. E.g. "2014-06-20". If left blank, you 
-#' will be supplied with options.
+#' @param snapshotdate (date) Required. Date of snapshot to use. E.g. "2014-06-20". If left blank, you will be supplied with options.
 #' 
 #' @param repo A repository path. This is the path to the root of your RRT repository. Defaults to current working directory current working directory via \code{\link{getwd}}.
 #' 
@@ -98,6 +97,56 @@ repoInstalledPackages <- function(repo, libPath = rrtPath(repo, "lib")){
 #  ------------------------------------------------------------------------
 
 
+#' @export
+mranUrl <- function()"http://cran-snapshots.revolutionanalytics.com/"
+
+
+#' Retrieves snapshot id for a given snapshot date.
+#' 
+#' @param url MRAN snapshot URL
+#' @param returnUrl If TRUE, returns URL with snapshotdate appended, otherwise returns snapshotdate as a string
+#' @inheritParams checkpoint
+#' 
+#' @export
+#' 
+#' @example \inst\examples\example_getSnapshotUrl.R
+#' 
+getSnapshotUrl <- function(snapshotdate, autosnap=c("first", "last", "all"), 
+                           url = mranUrl(), returnUrl = TRUE){
+  autosnap <- match.arg(autosnap)
+  page <- url(url)
+  on.exit(close(page))
+  
+  text <- tryCatch(suppressWarnings(readLines(page)), error=function(e)e)
+  if(inherits(text, "error")) {
+    stop(sprintf("Unable to download from MRAN: %s", text$message))
+  }
+  ptn <- "<a .*?>(.{10,})</a>.*"
+  idx <- grep(ptn, text)
+  text <- text[idx]
+  snaps <- gsub(ptn, "\\1", text)
+  
+  snaps <- gsub("/", "", snaps)
+  if(!missing("snapshotdate") && !is.null(snapshotdate)) {
+    snaps <- snaps[grep(snapshotdate, snaps)]
+  }
+  
+  snapshotdates <- substr(snaps, 1, 10)
+  res <- switch(autosnap, 
+                first = tapply(snaps, snapshotdates, FUN=head, n=1),
+                last  = tapply(snaps, snapshotdates, FUN=tail, n=1),
+                all   = snaps
+  )
+  res <- unname(as.vector(res))
+  if(returnUrl) paste0(url, res) else res
+}
+
+
+
+
+
+
+#  ------------------------------------------------------------------------
 
 #' Sets CRAN mirror to MRAN snapshot.
 #' 
@@ -108,7 +157,7 @@ repoInstalledPackages <- function(repo, libPath = rrtPath(repo, "lib")){
 #' 
 #' @export
 setMranMirror <- function(snapshotdate, autosnap="last", 
-                          snapshotUrl = getSnapShotUrl(snapshotdate, autosnap=autosnap)){
+                          snapshotUrl = getSnapshotUrl(snapshotdate, autosnap=autosnap)){
   options(repos = snapshotUrl)
 }
 
@@ -121,52 +170,6 @@ setMranMirror <- function(snapshotdate, autosnap="last",
 setLibPaths <- function(repo, libPath=rrtPath(repo, "lib")){
   .libPaths(libPath)
 }
-
-
-#  ------------------------------------------------------------------------
-
-
-
-mranUrl <- function()"http://cran-snapshots.revolutionanalytics.com/"
-
-
-#' Retrieves snapshot id for a given snapshot date.
-#' 
-#' @inheritParams checkpoint
-#' @param url MRAN snapshot URL
-#' @param returnUrl If TRUE, returns URL with snapshotdate appended, otherwise returns snapshotdate as a string
-
-#' @importFrom httr GET content
-#' @importFrom XML xpathSApply htmlParse xmlValue
-#' 
-#' @export
-#' 
-#' @example \inst\examples\example_getSnapshotUrl.R
-#' 
-getSnapshotUrl <- function(snapshotdate, autosnap=c("first", "last", "all"), 
-                           url = mranUrl(), returnUrl = TRUE){
-  autosnap <- match.arg(autosnap)
-  res <- GET(url)
-  if(res$status_code > 202)
-    stop(sprintf("%s - Unable to download from MRAN", res$status_code))
-  text <- content(res, as = "text")
-  snaps <- xpathSApply(htmlParse(text), "//a", xmlValue)[-1]
-  snaps <- gsub("/", "", snaps)
-  if(!missing("snapshotdate") && !is.null(snapshotdate)) {
-    snaps <- snaps[grep(snapshotdate, snaps)]
-  }
-  
-  snapshotdates <- substr(snaps, 1, 10)
-  res <- switch(autosnap, 
-                first = tapply(snaps, snapshotdates, FUN=head, n=1),
-                last  = tapply(snaps, snapshotdates, FUN=tail, n=1),
-                all   = snaps
-  )
-  res <- unname(res)
-  if(returnUrl) paste0(url, res) else res
-}
-
-
 
 
 #  ------------------------------------------------------------------------
