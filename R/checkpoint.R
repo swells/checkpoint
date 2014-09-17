@@ -30,33 +30,35 @@
 #' @example /inst/examples/example_checkpoint.R
 #'
 
-checkpoint <- function(snapshotDate, repo=getwd(), persistent = FALSE, verbose=TRUE) {
+checkpoint <- function(snapshotDate = NULL, repo=getwd(), persistent = FALSE, verbose=TRUE) {
 
-  createFolders(snapshotDate)
-  snapshoturl <- getSnapshotUrl(snapshotDate=snapshotDate)
+  if(!is.null(snapshotDate)) {
+    createFolders(snapshotDate)
+    snapshoturl <- getSnapshotUrl(snapshotDate=snapshotDate)
 
-  # set repos
-  setMranMirror(snapshotUrl = snapshoturl)
+    # set repos
+    setMranMirror(snapshotUrl = snapshoturl)
 
-  # Set lib path
-  setLibPaths(snapshotDate)
+    # Set lib path
+    setLibPaths(snapshotDate)
 
-  mssg(verbose, "Scanning for loaded pkgs")
+    mssg(verbose, "Scanning for loaded pkgs")
 
-  # Scan for packages used
-  mssg(verbose, "Scanning for packages used in this repository")
-  packages.to.install = repoScanPackages(repo)
+    # Scan for packages used
+    mssg(verbose, "Scanning for packages used in this repository")
+    packages.to.install = repoScanPackages(repo)
 
-  # download and install missing packages
+    # download and install missing packages
 
-  if(length(packages.to.install) > 0) {
-    mssg(verbose, "Installing packages used in this repository")
-    utils::install.packages(pkgs = packages.to.install, verbose=FALSE, quiet=TRUE)
-  } else {
-    mssg(verbose, "No packages found to install")
+    if(length(packages.to.install) > 0) {
+      mssg(verbose, "Installing packages used in this repository")
+      utils::install.packages(pkgs = packages.to.install, verbose=FALSE, quiet=TRUE)
+    } else {
+      mssg(verbose, "No packages found to install")
+    }
   }
 
-  # detach and reload checkpointed pkgs already loaded
+    # detach and reload checkpointed pkgs already loaded
   search.path = search()
   lapply(
     unlist(
